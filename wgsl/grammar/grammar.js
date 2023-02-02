@@ -14,7 +14,7 @@
 module.exports = grammar({
     name: 'wgsl',
 
-    externals: $ => [
+    externals: $ => [
         $._block_comment,
     ],
 
@@ -44,7 +44,7 @@ module.exports = grammar({
             seq($.type_alias_decl, token(';')),
             $.struct_decl,
             $.function_decl,
-            seq($.static_assert_statement, token(';'))
+            seq($.const_assert_statement, token(';'))
         ),
         bool_literal: $ => choice(
             token('true'),
@@ -142,7 +142,7 @@ module.exports = grammar({
             token('texture_depth_cube_array'),
             token('texture_depth_multisampled_2d')
         ),
-        type_alias_decl: $ => seq(token('type'), $.ident, token('='), $.type_specifier),
+        type_alias_decl: $ => seq(token('alias'), $.ident, token('='), $.type_specifier),
         type_specifier: $ => choice(
             $.ident,
             $.type_specifier_without_ident
@@ -192,11 +192,13 @@ module.exports = grammar({
         ),
         primary_expression: $ => choice(
             $.ident,
-            seq($.callable, $.argument_expression_list),
+            $.call_expression,
             $.literal,
             $.paren_expression,
             seq(token('bitcast'), token('<'), $.type_specifier, token('>'), $.paren_expression)
         ),
+        call_expression: $ => $.call_phrase,
+        call_phrase: $ => seq($.callable, $.argument_expression_list),
         callable: $ => choice(
             $.ident,
             $.type_specifier_without_ident,
@@ -346,8 +348,8 @@ module.exports = grammar({
         continuing_statement: $ => seq(token('continuing'), $.continuing_compound_statement),
         continuing_compound_statement: $ => seq(token('{'), optional(repeat1($.statement)), optional($.break_if_statement), token('}')),
         return_statement: $ => seq(token('return'), optional($.expression)),
-        func_call_statement: $ => seq($.ident, $.argument_expression_list),
-        static_assert_statement: $ => seq(token('static_assert'), $.expression),
+        func_call_statement: $ => $.call_phrase,
+        const_assert_statement: $ => seq(token('const_assert'), $.expression),
         statement: $ => choice(
             token(';'),
             seq($.return_statement, token(';')),
@@ -363,7 +365,7 @@ module.exports = grammar({
             seq(token('discard'), token(';')),
             seq($.variable_updating_statement, token(';')),
             $.compound_statement,
-            seq($.static_assert_statement, token(';'))
+            seq($.const_assert_statement, token(';'))
         ),
         variable_updating_statement: $ => choice(
             $.assignment_statement,
@@ -462,6 +464,7 @@ module.exports = grammar({
             token('auto'),
             token('await'),
             token('become'),
+            token('bf16'),
             token('binding_array'),
             token('cast'),
             token('catch'),
@@ -493,6 +496,7 @@ module.exports = grammar({
             token('extends'),
             token('extern'),
             token('external'),
+            token('f64'),
             token('fallthrough'),
             token('filter'),
             token('final'),
@@ -505,6 +509,9 @@ module.exports = grammar({
             token('groupshared'),
             token('handle'),
             token('highp'),
+            token('i16'),
+            token('i64'),
+            token('i8'),
             token('impl'),
             token('implements'),
             token('import'),
@@ -548,6 +555,7 @@ module.exports = grammar({
             token('protected'),
             token('pub'),
             token('public'),
+            token('quat'),
             token('readonly'),
             token('ref'),
             token('regardless'),
@@ -576,10 +584,14 @@ module.exports = grammar({
             token('throw'),
             token('trait'),
             token('try'),
+            token('type'),
             token('typedef'),
             token('typeid'),
             token('typename'),
             token('typeof'),
+            token('u16'),
+            token('u64'),
+            token('u8'),
             token('union'),
             token('unless'),
             token('unorm'),
@@ -597,7 +609,7 @@ module.exports = grammar({
             token('yield')
         ),
         ident: $ => $.ident_pattern_token,
-        _comment: $ => seq(token('//'), token(/.*/)),
+        _comment: $ => token('//.*'),
         _blankspace: $ => token(/[\u0020\u0009\u000a\u000b\u000c\u000d\u0085\u200e\u200f\u2028\u2029]/uy)
     },
 });
