@@ -528,6 +528,8 @@ dictionary GPUTextureBindingLayout {
 
 enum GPUStorageTextureAccess {
     "write-only",
+    "read-only",
+    "read-write",
 };
 
 dictionary GPUStorageTextureBindingLayout {
@@ -944,8 +946,6 @@ interface GPUCommandEncoder {
         GPUBuffer buffer,
         optional GPUSize64 offset = 0,
         optional GPUSize64 size);
-
-    undefined writeTimestamp(GPUQuerySet querySet, GPUSize32 queryIndex);
 
     undefined resolveQuerySet(
         GPUQuerySet querySet,
