@@ -1,4 +1,4 @@
-// Copyright (C) [2024] World Wide Web Consortium,
+// Copyright (C) [2026] World Wide Web Consortium,
 // (Massachusetts Institute of Technology, European Research Consortium for
 // Informatics and Mathematics, Keio University, Beihang).
 // All Rights Reserved.
@@ -38,7 +38,6 @@ module.exports = grammar({
 
     inline: $ => [
         $.global_decl,
-        $._reserved,
     ],
 
     // WGSL has no parsing conflicts.
@@ -47,11 +46,11 @@ module.exports = grammar({
     word: $ => $.ident_pattern_token,
 
     rules: {
-        translation_unit: $ => seq(repeat($.global_directive), repeat($.global_decl)),
+        translation_unit: $ => seq(repeat($.global_directive), repeat(choice($.global_decl, $.global_assert, ';'))),
 
         global_directive: $ => choice($.diagnostic_directive, $.enable_directive, $.requires_directive),
 
-        global_decl: $ => choice(';', seq($.global_variable_decl, ';'), seq($.global_value_decl, ';'), seq($.type_alias_decl, ';'), $.struct_decl, $.function_decl, seq($.const_assert_statement, ';')),
+        global_decl: $ => choice(seq($.global_variable_decl, ';'), seq($.global_value_decl, ';'), seq($.type_alias_decl, ';'), $.struct_decl, $.function_decl),
 
         bool_literal: $ => choice('true', 'false'),
 
@@ -66,6 +65,8 @@ module.exports = grammar({
         decimal_float_literal: $ => choice(/0[fh]/, /[1-9][0-9]*[fh]/, /[0-9]*\.[0-9]+([eE][+-]?[0-9]+)?[fh]?/, /[0-9]+\.[0-9]*([eE][+-]?[0-9]+)?[fh]?/, /[0-9]+[eE][+-]?[0-9]+[fh]?/),
 
         hex_float_literal: $ => choice(/0[xX][0-9a-fA-F]*\.[0-9a-fA-F]+([pP][+-]?[0-9]+[fh]?)?/, /0[xX][0-9a-fA-F]+\.[0-9a-fA-F]*([pP][+-]?[0-9]+[fh]?)?/, /0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+[fh]?/),
+
+        global_assert: $ => seq($.const_assert, ';'),
 
         diagnostic_directive: $ => seq('diagnostic', $.diagnostic_control, ';'),
 
@@ -257,9 +258,11 @@ module.exports = grammar({
 
         func_call_statement: $ => $.call_phrase,
 
-        const_assert_statement: $ => seq('const_assert', $.expression),
+        const_assert: $ => seq('const_assert', $.expression),
 
-        statement: $ => choice(';', seq($.return_statement, ';'), $.if_statement, $.switch_statement, $.loop_statement, $.for_statement, $.while_statement, seq($.func_call_statement, ';'), seq($.variable_or_value_statement, ';'), seq($.break_statement, ';'), seq($.continue_statement, ';'), seq('discard', ';'), seq($.variable_updating_statement, ';'), $.compound_statement, seq($.const_assert_statement, ';')),
+        assert_statement: $ => $.const_assert,
+
+        statement: $ => choice(';', seq($.return_statement, ';'), $.if_statement, $.switch_statement, $.loop_statement, $.for_statement, $.while_statement, seq($.func_call_statement, ';'), seq($.variable_or_value_statement, ';'), seq($.break_statement, ';'), seq($.continue_statement, ';'), seq('discard', ';'), seq($.variable_updating_statement, ';'), $.compound_statement, seq($.assert_statement, ';')),
 
         variable_updating_statement: $ => choice($.assignment_statement, $.increment_statement, $.decrement_statement),
 
@@ -275,13 +278,13 @@ module.exports = grammar({
 
         enable_extension_list: $ => seq($.enable_extension_name, repeat(seq(',', $.enable_extension_name)), optional(',')),
 
-        requires_directive: $ => seq('requires', $.software_extension_list, ';'),
+        requires_directive: $ => seq('requires', $.language_extension_list, ';'),
 
-        software_extension_list: $ => seq($.software_extension_name, repeat(seq(',', $.software_extension_name)), optional(',')),
+        language_extension_list: $ => seq($.language_extension_name, repeat(seq(',', $.language_extension_name)), optional(',')),
 
         enable_extension_name: $ => $.ident_pattern_token,
 
-        software_extension_name: $ => $.ident_pattern_token,
+        language_extension_name: $ => $.ident_pattern_token,
 
         ident_pattern_token: $ => /([_\p{XID_Start}][\p{XID_Continue}]+)|([\p{XID_Start}])/u,
 
@@ -293,6 +296,8 @@ module.exports = grammar({
 
         _comment: $ => /\/\/.*/,
 
-        _blankspace: $ => /[\u0020\u0009\u000a\u000b\u000c\u000d\u0085\u200e\u200f\u2028\u2029]/u
+        _blankspace: $ => /[\u0020\u0009\u000a\u000b\u000c\u000d\u0085\u200e\u200f\u2028\u2029]/u,
+
+        _reserved: $ => choice('NULL', 'Self', 'abstract', 'active', 'alignas', 'alignof', 'as', 'asm', 'asm_fragment', 'async', 'attribute', 'auto', 'await', 'become', 'cast', 'catch', 'class', 'co_await', 'co_return', 'co_yield', 'coherent', 'column_major', 'common', 'compile', 'compile_fragment', 'concept', 'const_cast', 'consteval', 'constexpr', 'constinit', 'crate', 'debugger', 'decltype', 'delete', 'demote', 'demote_to_helper', 'do', 'dynamic_cast', 'enum', 'explicit', 'export', 'extends', 'extern', 'external', 'fallthrough', 'filter', 'final', 'finally', 'friend', 'from', 'fxgroup', 'get', 'goto', 'groupshared', 'highp', 'impl', 'implements', 'import', 'inline', 'instanceof', 'interface', 'layout', 'lowp', 'macro', 'macro_rules', 'match', 'mediump', 'meta', 'mod', 'module', 'move', 'mut', 'mutable', 'namespace', 'new', 'nil', 'noexcept', 'noinline', 'nointerpolation', 'non_coherent', 'noncoherent', 'noperspective', 'null', 'nullptr', 'of', 'operator', 'package', 'packoffset', 'partition', 'pass', 'patch', 'pixelfragment', 'precise', 'precision', 'premerge', 'priv', 'protected', 'pub', 'public', 'readonly', 'ref', 'regardless', 'register', 'reinterpret_cast', 'require', 'resource', 'restrict', 'self', 'set', 'shared', 'sizeof', 'smooth', 'snorm', 'static', 'static_assert', 'static_cast', 'std', 'subroutine', 'super', 'target', 'template', 'this', 'thread_local', 'throw', 'trait', 'try', 'type', 'typedef', 'typeid', 'typename', 'typeof', 'union', 'unless', 'unorm', 'unsafe', 'unsized', 'use', 'using', 'varying', 'virtual', 'volatile', 'wgsl', 'where', 'with', 'writeonly', 'yield'),
     }
 })
